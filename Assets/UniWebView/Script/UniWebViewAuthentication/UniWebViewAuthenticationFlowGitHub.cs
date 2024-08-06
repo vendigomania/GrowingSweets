@@ -144,7 +144,7 @@ public class UniWebViewAuthenticationFlowGitHub: UniWebViewAuthenticationCommonF
     /// Implements required method in `IUniWebViewAuthenticationFlow`.
     /// </summary>
     public Dictionary<string, string> GetAccessTokenRequestParameters(string authResponse) {
-        if (!authResponse.StartsWith(callbackUrl)) {
+        if (!authResponse.StartsWith(callbackUrl, StringComparison.InvariantCultureIgnoreCase)) {
             throw AuthenticationResponseException.UnexpectedAuthCallbackUrl;
         }
         var uri = new Uri(authResponse);

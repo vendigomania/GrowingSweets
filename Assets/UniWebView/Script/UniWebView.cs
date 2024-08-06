@@ -164,9 +164,14 @@ public class UniWebView: MonoBehaviour {
     /// <param name="webView">The web view component which raises this event.</param>
     public delegate void OnWebContentProcessTerminatedDelegate(UniWebView webView);
     /// <summary>
-    /// Raised when on iOS, when system calls `webViewWebContentProcessDidTerminate` method. 
-    /// It is usually due to a low memory when loading the web content and leave you a blank white screen. 
-    /// You need to free as much as memory you could and then do a page reload.
+    /// On iOS, raise when the system calls `webViewWebContentProcessDidTerminate` method. On Android, raise when the
+    /// system calls `onRenderProcessGone` method.
+    /// 
+    /// It is usually due to a low memory or the render process crashes when loading the web content. When this happens,
+    /// the web view will leave you a blank white screen.
+    /// 
+    /// Usually you should close the web view and clean all the resource since there is no good way to restore. In some
+    /// cases, you can also try to free as much as memory and do a page `Reload`.
     /// </summary>
     public event OnWebContentProcessTerminatedDelegate OnWebContentProcessTerminated;
 
@@ -946,12 +951,14 @@ public class UniWebView: MonoBehaviour {
     }
 
     /// <summary>
-    /// Sets whether the web view area should avoid soft keyboard. It `true`, when the keyboard shows up, the web views
+    /// Sets whether the web view area should avoid soft keyboard. If `true`, when the keyboard shows up, the web views
     /// content view will resize itself to avoid keyboard overlap the web content. Otherwise, the web view will not resize
     /// and just leave the content below under the soft keyboard.
     /// 
     /// This method is only for Android. On iOS, the keyboard avoidance is built into the system directly and there is 
     /// no way to change its behavior.
+    /// 
+    /// Default is `true`.
     /// </summary>
     /// <param name="flag">Whether the keyboard should avoid web view content.</param>
     public static void SetEnableKeyboardAvoidance(bool flag) {
@@ -997,12 +1004,46 @@ public class UniWebView: MonoBehaviour {
     }
 
     /// <summary>
+    /// Sets whether the web page console output should be forwarded to native console.
+    ///
+    /// By setting this to `true`, UniWebView will try to intercept the web page console output methods and forward
+    /// them to the native console, for example, Xcode console on iOS, Android logcat on Android and Unity Console when
+    /// using Unity Editor on macOS. It provides a way to debug the web page by using the native console without opening
+    /// the web inspector. The forwarded logs in native side contains a "&lt;UniWebView-Web&gt;" tag. 
+    ///
+    /// Default is `false`. You need to set it before you create a web view instance to apply this setting. Any existing
+    /// web views are not affected.
+    ///
+    /// Logs from the methods below will be forwarded:
+    /// 
+    /// - console.log
+    /// - console.warn
+    /// - console.error
+    /// - console.debug
+    /// 
+    /// </summary>
+    /// <param name="flag">Whether the web page console output should be forwarded to native output.</param>
+    public static void SetForwardWebConsoleToNativeOutput(bool flag) {
+        UniWebViewInterface.SetForwardWebConsoleToNativeOutput(flag);
+    }
+
+    /// <summary>
     /// Cleans web view cache. This removes cached local data of web view. 
     /// 
     /// If you need to clear all cookies, use `ClearCookies` instead.
     /// </summary>
     public void CleanCache() {
         UniWebViewInterface.CleanCache(listener.Name);
+    }
+
+    /// <summary>
+    /// Sets the way of how the cache is used when loading a request.
+    ///
+    /// The default value is `UniWebViewCacheMode.Default`.
+    /// </summary>
+    /// <param name="cacheMode">The desired cache mode which the following request loading should be used.</param>
+    public void SetCacheMode(UniWebViewCacheMode cacheMode) {
+        UniWebViewInterface.SetCacheMode(listener.Name, (int)cacheMode);
     }
 
     /// <summary>
@@ -1209,11 +1250,18 @@ public class UniWebView: MonoBehaviour {
     /// <summary>
     /// Adds a trusted domain to white list and allow permission requests from the domain.
     /// 
-    /// You only need this on Android devices with system before 6.0 when a site needs the location or camera 
-    /// permission. It will allow the permission gets approved so you could access the corresponding devices.
-    /// From Android 6.0, the permission requests method is changed and this is not needed anymore.
+    /// You need this on Android devices when a site needs the location or camera  permission. It will allow the
+    /// permission gets approved so you could access the corresponding devices.
+    ///
+    /// Deprecated. Use `RegisterOnRequestMediaCapturePermission` instead, which works for both Android and iOS and
+    /// provides a more flexible way to handle the permission requests. By default, if neither this method and
+    /// `RegisterOnRequestMediaCapturePermission` is called, the permission request will trigger a grant alert to ask
+    /// the user to decide whether to allow or deny the permission.
+    ///  
     /// </summary>
     /// <param name="domain">The domain to add to the white list.</param>
+    [Obsolete("Deprecated. Use `RegisterOnRequestMediaCapturePermission` instead. Check " + 
+              "https://docs.uniwebview.com/api/#registeronrequestmediacapturepermission", false)]
     public void AddPermissionTrustDomain(string domain) {
         #if UNITY_ANDROID && !UNITY_EDITOR
         UniWebViewInterface.AddPermissionTrustDomain(listener.Name, domain);
@@ -1224,6 +1272,7 @@ public class UniWebView: MonoBehaviour {
     /// Removes a trusted domain from white list.
     /// </summary>
     /// <param name="domain">The domain to remove from white list.</param>
+    [Obsolete("Deprecated. Use `UnregisterOnRequestMediaCapturePermission` instead.", false)]
     public void RemovePermissionTrustDomain(string domain) {
         #if UNITY_ANDROID && !UNITY_EDITOR
         UniWebViewInterface.RemovePermissionTrustDomain(listener.Name, domain);
@@ -1286,6 +1335,8 @@ public class UniWebView: MonoBehaviour {
     /// Default is `true`</param>
     /// <param name="adjustInset">Whether the toolbar transition should also adjust web view position and size
     ///  if overlapped. Default is `false`</param>
+    [Obsolete("`SetShowToolbar` is deprecated. Use `EmbeddedToolbar.Show()` or `EmbeddedToolbar.Hide()`" + 
+              "instead.", false)]
     public void SetShowToolbar(bool show, bool animated = false, bool onTop = true, bool adjustInset = false) {
         #if (UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX || UNITY_IOS) && !UNITY_EDITOR_WIN && !UNITY_EDITOR_LINUX
         UniWebViewInterface.SetShowToolbar(listener.Name, show, animated, onTop, adjustInset);
@@ -1301,6 +1352,8 @@ public class UniWebView: MonoBehaviour {
     /// This method is only for iOS, since there is no toolbar on Android.
     /// </summary>
     /// <param name="text">The text needed to be set as done button title.</param>
+    [Obsolete("`SetToolbarDoneButtonText` is deprecated. Use `EmbeddedToolbar.SetDoneButtonText` " + 
+              "instead.", false)]
     public void SetToolbarDoneButtonText(string text) {
         #if UNITY_IOS && !UNITY_EDITOR
         UniWebViewInterface.SetToolbarDoneButtonText(listener.Name, text);
@@ -1316,6 +1369,8 @@ public class UniWebView: MonoBehaviour {
     /// This method is only for iOS and macOS Editor, since there is no toolbar on Android.
     /// </summary>
     /// <param name="text">The text needed to be set as go back button.</param>
+    [Obsolete("`SetToolbarGoBackButtonText` is deprecated. Use `EmbeddedToolbar.SetGoBackButtonText` " + 
+              "instead.", false)]
     public void SetToolbarGoBackButtonText(string text) {
         #if (UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX || UNITY_IOS) && !UNITY_EDITOR_WIN && !UNITY_EDITOR_LINUX
         UniWebViewInterface.SetToolbarGoBackButtonText(listener.Name, text);
@@ -1331,6 +1386,8 @@ public class UniWebView: MonoBehaviour {
     /// This method is only for iOS and macOS Editor, since there is no toolbar on Android.
     /// </summary>
     /// <param name="text">The text needed to be set as go forward button.</param>
+    [Obsolete("`SetToolbarGoForwardButtonText` is deprecated. Use `EmbeddedToolbar.SetGoForwardButtonText` " + 
+              "instead.", false)]
     public void SetToolbarGoForwardButtonText(string text) {
         #if (UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX || UNITY_IOS) && !UNITY_EDITOR_WIN && !UNITY_EDITOR_LINUX
         UniWebViewInterface.SetToolbarGoForwardButtonText(listener.Name, text);
@@ -1346,6 +1403,8 @@ public class UniWebView: MonoBehaviour {
     /// This method is only for iOS, since there is no toolbar on Android.
     /// </summary>
     /// <param name="color">The color should be used for the background tint of the toolbar.</param>
+    [Obsolete("`SetToolbarTintColor` is deprecated. Use `EmbeddedToolbar.SetBackgroundColor` " + 
+              "instead.", false)]
     public void SetToolbarTintColor(Color color) {
         #if UNITY_IOS && !UNITY_EDITOR
         UniWebViewInterface.SetToolbarTintColor(listener.Name, color.r, color.g, color.b);
@@ -1361,6 +1420,8 @@ public class UniWebView: MonoBehaviour {
     /// This method is only for iOS, since there is no toolbar on Android.
     /// </summary>
     /// <param name="color">The color should be used for the button text of the toolbar.</param>
+    [Obsolete("`SetToolbarTextColor` is deprecated. Use `EmbeddedToolbar.SetButtonTextColor` or " + 
+              "`EmbeddedToolbar.SetTitleTextColor` instead.", false)]
     public void SetToolbarTextColor(Color color) {
         #if UNITY_IOS && !UNITY_EDITOR
         UniWebViewInterface.SetToolbarTextColor(listener.Name, color.r, color.g, color.b);
@@ -1377,6 +1438,8 @@ public class UniWebView: MonoBehaviour {
     /// This method is only for iOS, since there is no toolbar on Android.
     /// </summary>
     /// <param name="show">Whether the navigation buttons on the toolbar should show or hide.</param>
+    [Obsolete("`SetShowToolbarNavigationButtons` is deprecated. Use `EmbeddedToolbar.ShowNavigationButtons` or " + 
+              "`EmbeddedToolbar.HideNavigationButtons` instead.", false)]
     public void SetShowToolbarNavigationButtons(bool show) {
         #if (UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX || UNITY_IOS) && !UNITY_EDITOR_WIN && !UNITY_EDITOR_LINUX
         UniWebViewInterface.SetShowToolbarNavigationButtons(listener.Name, show);
@@ -1580,19 +1643,21 @@ public class UniWebView: MonoBehaviour {
     /// <summary>
     /// Sets whether the drag interaction should be enabled on iOS.
     /// 
-    /// From iOS 11, the iPad web view supports the drag interaction when user long presses an image, link or text.
+    /// From iOS 11, the web view on iOS supports the drag interaction when user long presses an image, link or text.
     /// Setting this to `false` would disable the drag feather on the web view.
+    ///
+    /// On Android, there is no direct native way to disable drag only. This method instead disables the long touch
+    /// event, which is used as a trigger for drag interaction. So, setting this to `false` would disable the long
+    /// touch gesture as a side effect. 
     /// 
-    /// This method only works on iOS. It does nothing on Android or macOS editor. Default is `true`, which means
-    /// drag interaction on iPad is enabled.
+    /// It does nothing on macOS editor. Default is `true`, which means drag interaction is enabled if the device and
+    /// system version supports it.
     /// </summary>
     /// <param name="enabled">
     /// Whether the drag interaction should be enabled.
     /// </param>
     public void SetDragInteractionEnabled(bool enabled) {
-        #if (UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX || UNITY_IOS) && !UNITY_EDITOR_WIN && !UNITY_EDITOR_LINUX
         UniWebViewInterface.SetDragInteractionEnabled(listener.Name, enabled);
-        #endif
     }
 
     /// <summary>
@@ -1708,6 +1773,23 @@ public class UniWebView: MonoBehaviour {
     }
 
     /// <summary>
+    /// Sets whether allowing users to edit the file name before downloading. Default is `true`.
+    ///
+    /// If `true`, when a download task is triggered, a dialog will be shown to ask user to edit the file name and the
+    /// user has a chance to choose if the they actually want to download the file. If `false`, the file download will
+    /// start immediately without asking user to edit the file name. The file name is generated by guessing from the
+    /// content disposition header and the MIME type. If the guessing of the file name fails, a random string will be
+    /// used.
+    ///
+    /// </summary>
+    /// <param name="allowed">
+    /// Whether the user can edit the file name and determine whether actually starting the downloading.
+    /// </param>
+    public void SetAllowUserEditFileNameBeforeDownloading(bool allowed) {
+        UniWebViewInterface.SetAllowUserEditFileNameBeforeDownloading(listener.Name, allowed);
+    }
+
+    /// <summary>
     /// Sets whether allowing users to choose the way to handle the downloaded file. Default is `true`.
     /// 
     /// On iOS, the downloaded file will be stored in a temporary folder. Setting this to `true` will show a system 
@@ -1719,7 +1801,7 @@ public class UniWebView: MonoBehaviour {
     /// This method does not have any effect on Android. On Android, the file is downloaded to the Download folder.
     /// 
     /// </summary>
-    /// <param name="allowed"></param>
+    /// <param name="allowed">Whether the user can choose the way to handle the downloaded file.</param>
     public void SetAllowUserChooseActionAfterDownloading(bool allowed) {
         #if (UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX || UNITY_IOS) && !UNITY_EDITOR_WIN && !UNITY_EDITOR_LINUX
         UniWebViewInterface.SetAllowUserChooseActionAfterDownloading(listener.Name, allowed);
@@ -1898,6 +1980,65 @@ public class UniWebView: MonoBehaviour {
             UniWebViewChannelMethod.ShouldUniWebViewHandleRequest
         );
     }
+
+    /// <summary>
+    /// Registers a method handler for deciding whether UniWebView should allow a media request from the web page or
+    /// not.
+    ///
+    /// The handler is called when the web view receives a request to capture media, such as camera or microphone. It
+    /// usually happens when the web view is trying to access the camera or microphone by using the "getUserMedia" APIs
+    /// in WebRTC. You can check the request properties in the input `UniWebViewChannelMethodMediaCapturePermission`
+    /// instance, which contains information like the media type, the request origin (protocol and host), then decide
+    /// whether this media request should be allowed or not.
+    ///
+    /// According to the `UniWebViewMediaCapturePermissionDecision` value you return from the handler function,
+    /// UniWebView behaves differently:
+    ///  
+    /// - `Grant`: UniWebView allows the access without asking the user.
+    /// - `Deny`: UniWebView forbids the access and the web page will receive an error.
+    /// - `Prompt`: UniWebView asks the user for permission. The web page will receive a prompt to ask the user if they
+    /// allow the access to the requested media resources (camera or/and microphone).
+    ///
+    /// If this method is never called or the handler is unregistered, UniWebView will prompt the user for the
+    /// permission.
+    ///
+    /// On iOS, this method is available from iOS 15.0 or later. On earlier version of iOS, the handler will be ignored
+    /// and the web view will always prompt the user for the permission.
+    /// 
+    /// </summary>
+    /// <param name="handler">
+    /// A handler you can implement your own logic to decide whether UniWebView should allow, deny or prompt the media
+    /// resource access request.
+    ///
+    /// You need to return a `UniWebViewMediaCapturePermissionDecision` value to indicate the decision as soon as
+    /// possible.
+    /// </param>
+    public void RegisterOnRequestMediaCapturePermission(
+        Func<
+            UniWebViewChannelMethodMediaCapturePermission, 
+            UniWebViewMediaCapturePermissionDecision
+        > handler
+        )
+    {
+        object Func(object obj) => handler((UniWebViewChannelMethodMediaCapturePermission)obj);
+        UniWebViewChannelMethodManager.Instance.RegisterChannelMethod(
+            listener.Name, 
+            UniWebViewChannelMethod.RequestMediaCapturePermission,
+            Func
+        );
+    }
+    
+    /// <summary>
+    /// Unregisters the method handler for handling media capture permission request.
+    ///
+    /// This clears the handler registered by `RegisterOnRequestMediaCapturePermission` method.
+    /// </summary>
+    public void UnregisterOnRequestMediaCapturePermission() {
+        UniWebViewChannelMethodManager.Instance.UnregisterChannelMethod(
+            listener.Name, 
+            UniWebViewChannelMethod.RequestMediaCapturePermission
+        );
+    }
     
     void OnDestroy() {
         UniWebViewNativeListener.RemoveListener(listener.Name);
@@ -1905,6 +2046,20 @@ public class UniWebView: MonoBehaviour {
         UniWebViewInterface.Destroy(listener.Name);
         Destroy(listener.gameObject);
     }
+
+#if UNITY_ANDROID && !UNITY_EDITOR
+    // From Unity 2022.3.10, the player view is brought to front when switching back from a pause
+    // state. Requiring to bring the web view to front to make the web view visible.
+    // Issue caused by:
+    // https://issuetracker.unity3d.com/issues/android-a-black-screen-appears-for-a-few-seconds-when-returning-to-the-game-from-the-lock-screen-after-idle-time
+    // 
+    // Ref: UWV-1061
+    void OnApplicationPause(bool pauseStatus) {
+        if (!pauseStatus) {
+            UniWebViewInterface.BringContentToFront(listener.Name);
+        }
+    }
+#endif
 
     /* //////////////////////////////////////////////////////
     // Internal Listener Interface

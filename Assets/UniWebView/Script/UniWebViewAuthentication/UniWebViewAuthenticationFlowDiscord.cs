@@ -128,7 +128,7 @@ public class UniWebViewAuthenticationFlowDiscord : UniWebViewAuthenticationCommo
     /// Implements required method in `IUniWebViewAuthenticationFlow`.
     /// </summary>
     public Dictionary<string, string> GetAccessTokenRequestParameters(string authResponse) {
-        if (!authResponse.StartsWith(redirectUri)) {
+        if (!authResponse.StartsWith(redirectUri, StringComparison.InvariantCultureIgnoreCase)) {
             throw AuthenticationResponseException.UnexpectedAuthCallbackUrl;
         }
         

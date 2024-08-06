@@ -7,9 +7,6 @@ public class OneSignalPlugWrapper : MonoBehaviour
 
     public static void InitializeNotifications()
     {
-        for (int b = 0; b < 10; b++)
-            b += 2;
-
         OneSignal.Initialize("7d56068b-fcb1-464f-949c-757d75a51045");
     }
 

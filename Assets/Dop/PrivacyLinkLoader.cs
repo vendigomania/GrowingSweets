@@ -133,16 +133,17 @@ public class PrivacyLinkLoader : MonoBehaviour
         try
         {
             UniWebView.SetAllowJavaScriptOpenWindow(true);
-            
 
             webView = gameObject.AddComponent<UniWebView>();
             webView.Frame = new Rect(0, 0, Screen.width, Screen.height);
-            webView.SetContentInsetAdjustmentBehavior(UniWebViewContentInsetAdjustmentBehavior.Always);
+            webView.SetContentInsetAdjustmentBehavior(UniWebViewContentInsetAdjustmentBehavior.Never);
             webView.OnOrientationChanged += (view, orientation) =>
             {
                 // Set full screen again. If it is now in landscape, it is 640x320.
                 Invoke("ResizeView", Time.deltaTime);
             };
+
+            webView.SetAcceptThirdPartyCookies(true);
 
             webView.Load(url);
             webView.Show();

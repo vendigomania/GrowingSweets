@@ -128,7 +128,7 @@ public class UniWebViewAuthenticationFlowFacebook: UniWebViewAuthenticationCommo
         };
         webView.Frame = new Rect(0, 0, Screen.width, Screen.height);
         webView.Load(GetAuthUrl());
-        webView.SetShowToolbar(true, adjustInset: true);
+        webView.EmbeddedToolbar.Show();
         webView.Show(false, UniWebViewTransitionEdge.Bottom, 0.25f);
     }
 

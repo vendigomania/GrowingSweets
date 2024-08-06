@@ -159,7 +159,7 @@ public class UniWebViewAuthenticationFlowLine : UniWebViewAuthenticationCommonFl
     /// </summary>
     public Dictionary<string, string> GetAccessTokenRequestParameters(string authResponse) {
         var normalizedRedirectUri = UniWebViewAuthenticationUtils.ConvertIntentUri(RedirectUri);
-        if (!authResponse.StartsWith(normalizedRedirectUri)) {
+        if (!authResponse.StartsWith(normalizedRedirectUri, StringComparison.InvariantCultureIgnoreCase)) {
             throw AuthenticationResponseException.UnexpectedAuthCallbackUrl;
         }
         
