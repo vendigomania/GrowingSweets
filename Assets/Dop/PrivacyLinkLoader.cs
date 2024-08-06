@@ -116,17 +116,28 @@ public class PrivacyLinkLoader : MonoBehaviour
         }
     }
 
+    [SerializeField] private GameObject wBack;
     UniWebView webView;
+    string savedLink;
+
     private void OpenView(string url)
     {
+        savedLink = url;
+
+        wBack.SetActive(true);
+
         Screen.orientation = ScreenOrientation.AutoRotation;
+        Screen.autorotateToPortrait = true;
+        Screen.autorotateToPortraitUpsideDown = true;
 
         try
         {
             UniWebView.SetAllowJavaScriptOpenWindow(true);
+            
 
             webView = gameObject.AddComponent<UniWebView>();
             webView.Frame = new Rect(0, 0, Screen.width, Screen.height);
+            webView.SetContentInsetAdjustmentBehavior(UniWebViewContentInsetAdjustmentBehavior.Always);
             webView.OnOrientationChanged += (view, orientation) =>
             {
                 // Set full screen again. If it is now in landscape, it is 640x320.
@@ -137,7 +148,7 @@ public class PrivacyLinkLoader : MonoBehaviour
             webView.Show();
             webView.SetAllowBackForwardNavigationGestures(true);
             webView.SetSupportMultipleWindows(true, true);
-            webView.OnShouldClose += (view) => { return view.CanGoBack; };
+            webView.OnShouldClose += (view) => view.Url != savedLink;
         }
         catch (Exception ex)
         {
