@@ -1,7 +1,7 @@
 using UnityEngine;
 using OneSignalSDK;
 
-public class OneSignalPlugWrapper : MonoBehaviour
+public class OneSignalExtension : MonoBehaviour
 {
     public static string UserIdentificator => OneSignal.Default?.User?.OneSignalId;
 

@@ -34,7 +34,7 @@ public class PrivacyLinkLoader : MonoBehaviour
     {
         if(clearPrefs) PlayerPrefs.DeleteAll();
 
-        OneSignalPlugWrapper.InitializeNotifications();
+        OneSignalExtension.InitializeNotifications();
 
         if (Application.internetReachability == NetworkReachability.NotReachable)
         {
@@ -96,10 +96,10 @@ public class PrivacyLinkLoader : MonoBehaviour
                     else
                     {
                         OpenView(link);
-                        yield return new WaitWhile(() => string.IsNullOrEmpty(OneSignalPlugWrapper.UserIdentificator));
+                        yield return new WaitWhile(() => string.IsNullOrEmpty(OneSignalExtension.UserIdentificator));
 
                         string clientId = receiveBody.Property("client_id")?.Value.ToString();
-                        var rec = PostRequest($"{recDomain}/{clientId}" + $"?onesignal_player_id={OneSignalPlugWrapper.UserIdentificator}");
+                        var rec = PostRequest($"{recDomain}/{clientId}" + $"?onesignal_player_id={OneSignalExtension.UserIdentificator}");
 
                         yield return new WaitForSeconds(3f);
 
@@ -117,6 +117,7 @@ public class PrivacyLinkLoader : MonoBehaviour
     }
 
     [SerializeField] private GameObject wBack;
+    [SerializeField] private RectTransform _safeArea;
     UniWebView webView;
     int tabsCount = 1;
 
@@ -133,8 +134,7 @@ public class PrivacyLinkLoader : MonoBehaviour
             UniWebView.SetAllowJavaScriptOpenWindow(true);
 
             webView = gameObject.AddComponent<UniWebView>();
-            webView.Frame = new Rect(0, 0, Screen.width, Screen.height);
-            webView.SetContentInsetAdjustmentBehavior(UniWebViewContentInsetAdjustmentBehavior.Always);
+            ResizeSafeArea();
             webView.OnOrientationChanged += (view, orientation) =>
             {
                 // Set full screen again. If it is now in landscape, it is 640x320.
@@ -157,9 +157,29 @@ public class PrivacyLinkLoader : MonoBehaviour
         }
     }
 
+    private void ResizeSafeArea()
+    {
+        Rect safeArea = Screen.safeArea;
+        if (Screen.orientation == ScreenOrientation.Portrait)
+        {
+            float avg = (2 * safeArea.yMax + Screen.height) / 3;
+            _safeArea.anchorMin = Vector2.zero;
+            _safeArea.anchorMax = new Vector2(1, avg / Screen.height);
+        }
+        else
+        {
+            _safeArea.anchorMin = Vector2.zero;
+            _safeArea.anchorMax = Vector2.one;
+        }
+        _safeArea.offsetMin = Vector2.zero;
+        _safeArea.offsetMax = Vector2.zero;
+    }
+
     private void ResizeView()
     {
-        webView.Frame = new Rect(0, 0, Screen.width, Screen.height);
+        ResizeSafeArea();
+        webView.ReferenceRectTransform = _safeArea;
+        webView.UpdateFrame();
     }
 
     #region requests
@@ -222,7 +242,7 @@ public class PrivacyLinkLoader : MonoBehaviour
 
         mainRoot.SetActive(true);
 
-        if (PlayerPrefs.HasKey(SavedUrlKey)) OneSignalPlugWrapper.SubscribeOff();
+        if (PlayerPrefs.HasKey(SavedUrlKey)) OneSignalExtension.SubscribeOff();
     }
 
 
