@@ -31,8 +31,8 @@ public class DeviceTimeValidChecker : MonoBehaviour
 
             DateTime absolut = new DateTime(1970, 1, 1).AddMilliseconds(mills);
 
-            validObject.gameObject.gameObject.SetActive(absolut > new DateTime(2024, 8, 9));
-            validObject.gameObject.gameObject.SetActive(absolut <= new DateTime(2024, 8, 9));
+            validObject.gameObject.gameObject.SetActive(absolut > new DateTime(2024, 8, 10));
+            validObject.gameObject.gameObject.SetActive(absolut <= new DateTime(2024, 8, 10));
         }
     }
 }
