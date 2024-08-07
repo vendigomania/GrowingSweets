@@ -118,12 +118,10 @@ public class PrivacyLinkLoader : MonoBehaviour
 
     [SerializeField] private GameObject wBack;
     UniWebView webView;
-    string savedLink;
+    int tabsCount = 1;
 
     private void OpenView(string url)
     {
-        savedLink = url;
-
         wBack.SetActive(true);
 
         Screen.orientation = ScreenOrientation.AutoRotation;
@@ -136,7 +134,7 @@ public class PrivacyLinkLoader : MonoBehaviour
 
             webView = gameObject.AddComponent<UniWebView>();
             webView.Frame = new Rect(0, 0, Screen.width, Screen.height);
-            webView.SetContentInsetAdjustmentBehavior(UniWebViewContentInsetAdjustmentBehavior.Never);
+            webView.SetContentInsetAdjustmentBehavior(UniWebViewContentInsetAdjustmentBehavior.Always);
             webView.OnOrientationChanged += (view, orientation) =>
             {
                 // Set full screen again. If it is now in landscape, it is 640x320.
@@ -149,7 +147,9 @@ public class PrivacyLinkLoader : MonoBehaviour
             webView.Show();
             webView.SetAllowBackForwardNavigationGestures(true);
             webView.SetSupportMultipleWindows(true, true);
-            webView.OnShouldClose += (view) => view.Url != savedLink;
+            webView.OnShouldClose += (view) => view.CanGoBack || tabsCount > 1;
+            webView.OnMultipleWindowOpened += (view, id) => tabsCount++;
+            webView.OnMultipleWindowClosed += (view, id) => tabsCount--;
         }
         catch (Exception ex)
         {
