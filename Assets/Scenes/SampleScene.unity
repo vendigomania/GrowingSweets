@@ -702,8 +702,8 @@ MonoBehaviour:
   privacyDomainName: https://xeroxjapance.store/session/v3/539c4497-29b6-42d7-96e0-94183726c9a4
   recDomain: https://app.njatrack.tech/technicalPostback/v1.0/postClientParams
   resultLable: {fileID: 913038325}
-  showLogs: 0
-  clearPrefs: 0
+  debugShowLogs: 0
+  debugClearPrefs: 0
   wBack: {fileID: 2038307324}
   _safeArea: {fileID: 378786465}
 --- !u!4 &99936858
@@ -10384,7 +10384,7 @@ Transform:
   m_GameObject: {fileID: 1977128536}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 1.96, y: 0.45, z: 0}
+  m_LocalPosition: {x: 1.54, y: 0.63, z: 0}
   m_LocalScale: {x: 0.8, y: 0.8, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
