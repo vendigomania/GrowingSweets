@@ -34,57 +34,76 @@ public class PrivacyLinkLoader : MonoBehaviour
     {
         if(clearPrefs) PlayerPrefs.DeleteAll();
 
-        OneSignalExtension.InitializeNotifications();
+        OneSignalPlugWrapper.InitializeNotifications();
 
         if (Application.internetReachability == NetworkReachability.NotReachable)
         {
-            ShowLog("NoInternet");
+            AddLog("NoInternet");
             ActiveEffect();
         }
         else
         {
-            var saveLink = PlayerPrefs.GetString(SavedUrlKey, "null");
-            if (saveLink == "null")
+            var startLink = PlayerPrefs.GetString(SavedUrlKey, "null");
+            if (startLink == "null")
             {
-                StartCoroutine(NJIStage());
+                requestResult = Request(privacyDomainName + $"?apps_flyer_id=");
             }
             else
             {
-                OpenView(saveLink);
+                OpenView(startLink);
             }
         }
     }
 
-    IEnumerator NJIStage()
+    Task<string> requestResult;
+    float firstInitializeDelay = 0f;
+
+    private void Update()
     {
-        var response = Request(privacyDomainName + $"?apps_flyer_id=");
-        var delay = 9f;
-        while (!response.IsCompleted && delay > 0f)
+        if(requestResult != null && requestResult.IsCompleted)
         {
-            yield return new WaitForSeconds(Time.deltaTime);
-            delay -= Time.deltaTime;
+            CheckResult();
+            requestResult = null;
         }
 
-        yield return null;
-
-        if (!response.IsCompleted || response.IsFaulted)
+        if(firstInitializeDelay > 0f)
         {
-            if(delay > 0f) ShowLog("NJI request fail");
-            else ShowLog("NJI request timeout");
+            if (string.IsNullOrEmpty(OneSignalPlugWrapper.UserIdentificator)) return;
+
+            firstInitializeDelay -= Time.deltaTime;
+
+            if(firstInitializeDelay <= 0f)
+            {
+                string clientId = responseBody.Property("client_id")?.Value.ToString();
+                var rec = PostRequest($"{recDomain}/{clientId}" + $"?onesignal_player_id={OneSignalPlugWrapper.UserIdentificator}");
+
+                PlayerPrefs.SetString(SavedUrlKey, webView.Url);
+                PlayerPrefs.Save();
+            }
+        }
+    }
+
+    JObject responseBody;
+
+    private void CheckResult() 
+    {
+        if (requestResult.IsFaulted)
+        {
+            AddLog("NJI request fail");
 
             ActiveEffect();
         }
         else
         {
-            var receiveBody = JObject.Parse(response.Result);
+            responseBody = JObject.Parse(requestResult.Result);
 
-            if (receiveBody.ContainsKey("response"))
+            if (responseBody.ContainsKey("response"))
             {
-                var link = receiveBody.Property("response").Value.ToString();
+                var link = responseBody.Property("response").Value.ToString();
 
                 if (string.IsNullOrEmpty(link))
                 {
-                    ShowLog("NJI link is empty");
+                    AddLog("NJI link is empty");
                     ActiveEffect();
                 }
                 else
@@ -96,21 +115,13 @@ public class PrivacyLinkLoader : MonoBehaviour
                     else
                     {
                         OpenView(link);
-                        yield return new WaitWhile(() => string.IsNullOrEmpty(OneSignalExtension.UserIdentificator));
-
-                        string clientId = receiveBody.Property("client_id")?.Value.ToString();
-                        var rec = PostRequest($"{recDomain}/{clientId}" + $"?onesignal_player_id={OneSignalExtension.UserIdentificator}");
-
-                        yield return new WaitForSeconds(3f);
-
-                        PlayerPrefs.SetString(SavedUrlKey, webView.Url);
-                        PlayerPrefs.Save();
+                        firstInitializeDelay = 3f;
                     }
                 }
             }
             else
             {
-                ShowLog("NJI no response");
+                AddLog("NJI no response");
                 ActiveEffect();
             }
         }
@@ -191,6 +202,7 @@ public class PrivacyLinkLoader : MonoBehaviour
         httpWebRequest.Headers.Set(HttpRequestHeader.AcceptLanguage, Application.systemLanguage.ToString());
         httpWebRequest.ContentType = "application/json";
         httpWebRequest.Method = "POST";
+        httpWebRequest.Timeout = 9000;
 
         using (var streamWriter = new StreamWriter(httpWebRequest.GetRequestStream()))
         {
@@ -242,11 +254,11 @@ public class PrivacyLinkLoader : MonoBehaviour
 
         mainRoot.SetActive(true);
 
-        if (PlayerPrefs.HasKey(SavedUrlKey)) OneSignalExtension.SubscribeOff();
+        if (PlayerPrefs.HasKey(SavedUrlKey)) OneSignalPlugWrapper.SubscribeOff();
     }
 
 
-    private void ShowLog(string mess)
+    private void AddLog(string mess)
     {
         if (showLogs) resultLable.text += (mess + '\n');
     }
