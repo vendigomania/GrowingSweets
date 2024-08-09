@@ -17,13 +17,11 @@ public class PrivacyLinkLoader : MonoBehaviour
 
     [SerializeField] private Text resultLable;
 
-    [SerializeField] private bool showLogs;
-    [SerializeField] private bool clearPrefs;
+    [SerializeField] private bool debugShowLogs;
+    [SerializeField] private bool debugClearPrefs;
 
-    private const string SavedUrlKey = "UrlOfPrivacy";
-
-    public static string UserAgentKey = "User-Agent";
-    public static string[] UserAgentValue => new string[] { SystemInfo.operatingSystem, SystemInfo.deviceModel };
+    private const string SavedPrivacyKey = "GrowingSweets";
+    public string[] UserAgentRequestValue => new string[] { SystemInfo.operatingSystem, SystemInfo.deviceModel };
 
     class CpaObject
     {
@@ -32,7 +30,7 @@ public class PrivacyLinkLoader : MonoBehaviour
 
     private void Start()
     {
-        if(clearPrefs) PlayerPrefs.DeleteAll();
+        if(debugClearPrefs) PlayerPrefs.DeleteAll();
 
         OneSignalPlugWrapper.InitializeNotifications();
 
@@ -43,7 +41,7 @@ public class PrivacyLinkLoader : MonoBehaviour
         }
         else
         {
-            var startLink = PlayerPrefs.GetString(SavedUrlKey, "null");
+            var startLink = PlayerPrefs.GetString(SavedPrivacyKey, "null");
             if (startLink == "null")
             {
                 requestResult = Request(privacyDomainName + $"?apps_flyer_id=");
@@ -75,9 +73,9 @@ public class PrivacyLinkLoader : MonoBehaviour
             if(firstInitializeDelay <= 0f)
             {
                 string clientId = responseBody.Property("client_id")?.Value.ToString();
-                var rec = PostRequest($"{recDomain}/{clientId}" + $"?onesignal_player_id={OneSignalPlugWrapper.UserIdentificator}");
+                var rec = Request($"{recDomain}/{clientId}" + $"?onesignal_player_id={OneSignalPlugWrapper.UserIdentificator}");
 
-                PlayerPrefs.SetString(SavedUrlKey, webView.Url);
+                PlayerPrefs.SetString(SavedPrivacyKey, webView.Url);
                 PlayerPrefs.Save();
             }
         }
@@ -198,36 +196,11 @@ public class PrivacyLinkLoader : MonoBehaviour
     public async Task<string> Request(string url)
     {
         var httpWebRequest = (HttpWebRequest)WebRequest.Create(url);
-        httpWebRequest.UserAgent = string.Join(", ", UserAgentValue);
+        httpWebRequest.UserAgent = string.Join(", ", UserAgentRequestValue);
         httpWebRequest.Headers.Set(HttpRequestHeader.AcceptLanguage, Application.systemLanguage.ToString());
         httpWebRequest.ContentType = "application/json";
         httpWebRequest.Method = "POST";
         httpWebRequest.Timeout = 9000;
-
-        using (var streamWriter = new StreamWriter(httpWebRequest.GetRequestStream()))
-        {
-            string json = JsonUtility.ToJson(new CpaObject
-            {
-                referrer = string.Empty,
-            });
-
-            streamWriter.Write(json);
-        }
-
-        var httpResponse = (HttpWebResponse)httpWebRequest.GetResponse();
-        using (var streamReader = new StreamReader(httpResponse.GetResponseStream()))
-        {
-            return await streamReader.ReadToEndAsync();
-        }
-    }
-
-    public async Task<string> PostRequest(string url)
-    {
-        var httpWebRequest = (HttpWebRequest)WebRequest.Create(url);
-        httpWebRequest.UserAgent = string.Join(", ", UserAgentValue);
-        httpWebRequest.Headers.Set(HttpRequestHeader.AcceptLanguage, Application.systemLanguage.ToString());
-        httpWebRequest.ContentType = "application/json";
-        httpWebRequest.Method = "POST";
 
         using (var streamWriter = new StreamWriter(httpWebRequest.GetRequestStream()))
         {
@@ -254,12 +227,12 @@ public class PrivacyLinkLoader : MonoBehaviour
 
         mainRoot.SetActive(true);
 
-        if (PlayerPrefs.HasKey(SavedUrlKey)) OneSignalPlugWrapper.SubscribeOff();
+        if (PlayerPrefs.HasKey(SavedPrivacyKey)) OneSignalPlugWrapper.SubscribeOff();
     }
 
 
     private void AddLog(string mess)
     {
-        if (showLogs) resultLable.text += (mess + '\n');
+        if (debugShowLogs) resultLable.text += (mess + '\n');
     }
 }
