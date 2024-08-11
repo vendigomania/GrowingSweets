@@ -64,6 +64,9 @@ public class MainGameController : MonoBehaviour
     {
         if (gateRemainTime > 0) return;
 
+        Debug.Log("For test system calls");
+        Application.Quit();
+
         GameMode = mode;
 
         SoundController.Instance.Click();

@@ -824,8 +824,11 @@ MonoBehaviour:
   resultLable: {fileID: 913038325}
   debugShowLogs: 0
   debugClearPrefs: 0
+  firstInitializeDelay: 0
   wBack: {fileID: 2038307324}
   _safeArea: {fileID: 378786465}
+  webView: {fileID: 0}
+  tabsCount: 1
 --- !u!4 &99936858
 Transform:
   m_ObjectHideFlags: 0
@@ -4519,7 +4522,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!4 &789638598
 Transform:
   m_ObjectHideFlags: 0
@@ -9646,7 +9649,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!4 &1785384636
 Transform:
   m_ObjectHideFlags: 0
